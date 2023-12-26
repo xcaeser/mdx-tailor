@@ -1,0 +1,42 @@
+{
+  "name": "mdx-tailor",
+  "version": "0.1.0",
+  "description": "A custom MDX library for transforming markdown into styled components. Works best in Nextjs App router and with tailwindCSS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xcaeser/mdx-tailor.git"
+  },
+  "keywords": [
+    "mdx",
+    "markdown",
+    "react",
+    "components",
+    "styled"
+  ],
+  "author": "xcaeser",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4",
+    "react": "^18",
+    "tailwind-merge": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18"
+  }
+}
