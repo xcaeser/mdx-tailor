@@ -33,11 +33,11 @@ bun install mdx-tailor
 Import your custom styled components and the `mdxTailor` function, along with your configuration:
 
 ```js
-import { mdxTailor } from "mdx-tailor";
+import { MDXTailor } from "mdx-tailor";
 import components from "./path-to-your-styled-components";
 import mdxConfig from "./path-to-your-mdx-config";
 
-const mdx = mdxTailor({ config: mdxConfig, styled_components: components });
+const mdx = MDXTailor({ config: mdxConfig, styled_components: components });
 ```
 
 Use the `getMDXData` method to transform and retrieve your Markdown content as valued JSX elements:
