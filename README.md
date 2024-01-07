@@ -29,6 +29,34 @@ Or with bun:
 bun install mdx-tailor
 ```
 
+## Configuration :gear:
+
+Define your MDX configurations for robust document structure and metadata typing. Below is an example configuration:
+
+```js
+const mdxConfig = {
+  workDir: "/src/server/mdx",
+  // Define your routes with associated metadata
+  routes: [
+    {
+      name: "toolkit",
+      path: "/toolkit",
+      folder: "/cheatsheet",
+      // Define metadata fields for the route
+      metadata: [
+        { name: "author", type: "string", required: true },
+        // ...additional metadata fields
+      ],
+    },
+    // ...additional routes
+  ],
+};
+
+export default mdxConfig;
+```
+
+By utilizing TypeScript, `mdx-tailor` automatically infers the types for provided configurations, ensuring your metadata aligns with the expected types and structure.
+
 ## Usage 🛠️
 
 Import your custom styled components and the `mdxTailor` function, along with your configuration:
@@ -47,6 +75,7 @@ Use the `getMDXData` method to transform and retrieve your Markdown content as v
 function MyMarkdownComponent() {
 
   const data = mdx.getMDXData("route-defined-in-your-config", "folder-defined-in-your-config","fileName-without-mdx-extension");
+  // const data = mdx.getMDXData("toolkit", "cheatsheet", "my-cheatsheet");
 
   // Now render your Markdown content as JSX!
   return (
@@ -83,34 +112,6 @@ export default components;
 ```
 
 Now you can import these components and use them with `mdx-tailor` to render your markdown content with custom styles.
-
-## Configuration :gear:
-
-Define your MDX configurations for robust document structure and metadata typing. Below is an example configuration:
-
-```js
-const mdxConfig = {
-  workDir: "/src/server/mdx",
-  // Define your routes with associated metadata
-  routes: [
-    {
-      name: "toolkit",
-      path: "/toolkit",
-      folder: "/cheatsheet",
-      // Define metadata fields for the route
-      metadata: [
-        { name: "author", type: "string", required: true },
-        // ...additional metadata fields
-      ],
-    },
-    // ...additional routes
-  ],
-};
-
-export default mdxConfig;
-```
-
-By utilizing TypeScript, `mdx-tailor` automatically infers the types for provided configurations, ensuring your metadata aligns with the expected types and structure.
 
 ## Contributing 🤝
 
