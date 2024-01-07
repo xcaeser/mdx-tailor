@@ -3,7 +3,7 @@
 [![NPM Version](https://img.shields.io/npm/v/mdx-tailor.svg)](https://www.npmjs.com/package/mdx-tailor)
 [![License](https://img.shields.io/npm/l/mdx-tailor.svg)](https://www.npmjs.com/package/mdx-tailor)
 
-`mdx-tailor` is a fully typed Markdown to JSX transformer library, designed to empower developers to style Markdown content with custom MDX components 🎨 and bring it to life as React components. With type inference and flexible configuration, `mdx-tailor` enables a seamless developer experience 🚀.
+`mdx-tailor` is a fully typed Markdown to JSX transformer library, designed to empower developers to style Markdown content with custom MDX components 🎨 and bring it to life as React components. With type inference, flexible configuration, and extended error handling capabilities, `mdx-tailor` enables a seamless and robust developer experience 🚀.
 
 Works best with Next.js and other React frameworks.
 
@@ -11,6 +11,7 @@ Works best with Next.js and other React frameworks.
 
 - **Fully Typed**: Leverage TypeScript for strong typing throughout the library.
 - **Configurable**: Easily define your Markdown transformation rules and styles with a comprehensive configuration object.
+- **Enhanced Error Handling**: Robust error handling mechanisms, including custom error classes and detailed error logging.
 - **Type Inference for Configurations**: No need for verbose type annotations—enjoy automatic type inference for your configurations.
 - **Custom Styling (using TailwindCSS)**: Define styled components for your Markdown elements, providing endless creative possibilities.
 
@@ -44,20 +45,8 @@ Use the `getMDXData` method to transform and retrieve your Markdown content as v
 
 ```jsx
 function MyMarkdownComponent() {
-  const markdownContent = `
-  ---
-  title: Amazing Title
-  author: John Doe
-  ---
 
-  ## Subheading
-
-  - List
-  - Of
-  - Items
-  `;
-
-  const data = mdx.getMDXData(markdownContent, "toolkit");
+  const data = mdx.getMDXData("route-defined-in-your-config", "folder-defined-in-your-config","fileName-without-mdx-extension");
 
   // Now render your Markdown content as JSX!
   return (
@@ -73,6 +62,9 @@ function MyMarkdownComponent() {
   );
 }
 ```
+
+folders can be inferred from the route, but for added flexibility, you can use folders from other routes as well. the mdx files need to follow the metadata of your chosen route though.
+
 
 ## Custom Styled Components ✒️
 

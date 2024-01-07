@@ -1,8 +1,11 @@
+import { clsx, type ClassValue } from "clsx";
+import fs from "fs";
 import React from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { twMerge } from "tailwind-merge";
 import YAML from "yaml";
 import { ZodError, ZodTypeAny, z } from "zod";
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
 
 const cn = (...inputs: ClassValue[]) => {
   return twMerge(clsx(inputs));
@@ -100,7 +103,12 @@ export const components = {
   },
 
   h2: ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
-    return <h2 className={cn("text-lg font-bold", className)} {...props} />;
+    return (
+      <h2
+        className={cn("text-lg text-red-500 font-bold", className)}
+        {...props}
+      />
+    );
   },
   h3: ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
     return <h3 className={cn("text-base font-bold", className)} {...props} />;
@@ -116,6 +124,34 @@ export const components = {
   },
   p: ({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => {
     return <p className={cn("[&:not(:first-child)]:", className)} {...props} />;
+  },
+  a: ({ className, ...props }: React.HTMLAttributes<HTMLAnchorElement>) => {
+    return (
+      <a
+        className={cn("text-blue-500 hover:text-blue-700 underline", className)}
+        {...props}
+      />
+    );
+  },
+  blockquote: ({
+    className,
+    ...props
+  }: React.HTMLAttributes<HTMLQuoteElement>) => {
+    return (
+      <blockquote className={cn("border-l-4 pl-4", className)} {...props} />
+    );
+  },
+  hr: ({ className, ...props }: React.HTMLAttributes<HTMLHRElement>) => {
+    return <hr className={cn("my-6", className)} {...props} />;
+  },
+  span: ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
+    return <span className={cn("text-red-500", className)} {...props} />;
+  },
+
+  pre: ({ className, ...props }: React.HTMLAttributes<HTMLPreElement>) => {
+    return (
+      <pre className={cn("bg-gray-100 p-4 rounded-md", className)} {...props} />
+    );
   },
 } as const;
 
@@ -135,6 +171,7 @@ export const MDXTailor = <T extends MDXConfig>({
 }) => {
   type RouteNames = T["routes"][number]["name"];
   type MetadataTypes = ExtractMetadataType<T["routes"]>;
+  type RouteFolder = T["routes"][number]["folder"];
 
   /**
    * The configuration schema.
@@ -278,16 +315,46 @@ export const MDXTailor = <T extends MDXConfig>({
   };
 
   /**
+   * Retrieves the list of files in a directory.
+   *
+   * @param dir The name of the directory.
+   * @returns The list of files in the directory.
+   */
+  const getFilesInDir = (dir: string): string[] => {
+    // open a directory using pwd and read its contents
+    const local_config = loadConfig(config);
+    const files = fs
+      .readdirSync(process.env.PWD + local_config.workDir + dir)
+      .filter((file) => file.endsWith(".mdx"));
+
+    // return the list of mdx files
+    return files;
+  };
+
+  const getOneFileInDir = (dir: string, name: string): string => {
+    return getFilesInDir(dir).filter(
+      (file) => file.toLowerCase() === name.toLowerCase() + ".mdx"
+    )[0];
+  };
+
+  /**
    * Retrieves the metadata and content of an MDX file.
    *
-   * @param content The contents of the MDX file.
-   * @param route The name of the route associated with the MDX file.
-   * @returns An object containing the metadata and content of the MDX file.
+   * @param folder The name of the folder containing the MDX file.
+   * @param route The name of the route.
+   * @param file The name of the MDX file.
+   * @returns The metadata and content of the MDX file, or undefined if the file does not exist or is invalid.
    */
   const getMDXData = <Route extends RouteNames>(
-    content: string,
-    route: Route
+    route: Route,
+    folder: RouteFolder,
+    file: string
   ): { metadata: MetadataTypes[Route]; content: string } | undefined => {
+    let content = fs.readFileSync(
+      process.env.PWD + config.workDir + folder + "/" + file + ".mdx",
+      "utf8"
+    );
+
     const lines = content.split("---");
     if (lines.length !== 3) {
       logError(
@@ -389,125 +456,42 @@ export const MDXTailor = <T extends MDXConfig>({
   };
 
   /**
+   * Escapes special characters in a string for use in HTML.
+   *
+   * @param str The string to escape.
+   * @returns The escaped string.
+   */
+  const escapeHtml = (unsafe: string) => {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  /**
    * Parses Markdown into a list of JSX elements.
    *
    * @param markdown The Markdown text to parse.
+   * @param styled_components JSX components to use for styling the Markdown text e.g. styled_components.p or styled_components.h1 and also takes into account custom React components.
    * @returns A list of JSX elements representing the Markdown text.
    */
-  const markdownToJSX = (markdown: string): JSX.Element[] => {
-    const lines = markdown.split("\n");
-    let elements: JSX.Element[] = [];
-    let listStack: Array<"ul" | "ol"> = [];
-    let listItemIndex = 0; // New variable to keep track of list item index
-
-    const closeLists = (): void => {
-      while (listStack.length) {
-        const listType = listStack.pop();
-        if (listType === "ul") {
-          elements.push(
-            React.createElement(styled_components.ul, {
-              key: `list-${elements.length}`,
-            })
-          );
-        } else if (listType === "ol") {
-          elements.push(
-            React.createElement(styled_components.ol, {
-              key: `list-${elements.length}`,
-            })
-          );
-        }
-      }
-    };
-
-    const parseLine = (line: string): JSX.Element | null => {
-      const trimmedLine = line.trim();
-
-      const headerMatch = trimmedLine.match(/^#+/);
-      if (headerMatch) {
-        closeLists();
-        const headerLevel = headerMatch[0].length;
-        // handle all types of headers
-        if (headerLevel === 1) {
-          return React.createElement(
-            styled_components.h1,
-            { key: `header-${elements.length}` },
-            trimmedLine.slice(headerLevel + 1)
-          );
-        } else if (headerLevel === 2) {
-          return React.createElement(
-            styled_components.h2,
-            { key: `header-${elements.length}` },
-            trimmedLine.slice(headerLevel + 1)
-          );
-        } else if (headerLevel === 3) {
-          return React.createElement(
-            styled_components.h3,
-            { key: `header-${elements.length}` },
-            trimmedLine.slice(headerLevel + 1)
-          );
-        }
-      }
-
-      // handle unordered lists
-
-      if (/^\- /.test(trimmedLine)) {
-        if (!listStack.length || listStack[listStack.length - 1] !== "ul") {
-          closeLists();
-          listStack.push("ul");
-        }
-        return React.createElement(
-          styled_components.li,
-          {},
-          trimmedLine.slice(2)
-        );
-      }
-
-      if (/^\d+\. /.test(trimmedLine)) {
-        if (!listStack.length || listStack[listStack.length - 1] !== "ol") {
-          closeLists();
-          listStack.push("ol");
-        }
-        return React.createElement(
-          styled_components.li,
-          {},
-          trimmedLine.slice(trimmedLine.indexOf(".") + 2)
-        );
-      }
-
-      if (trimmedLine === "") {
-        closeLists();
-        return null;
-      }
-
-      // Additional parsers for bold, italic, links, etc., can be added here
-
-      closeLists();
-      return React.createElement(styled_components.p, {}, trimmedLine);
-    };
-
-    lines.forEach((line, index) => {
-      const element = parseLine(line);
-      if (element) {
-        if (element.type === styled_components.li) {
-          // For list items, use a combination of list index and item index
-          elements.push(
-            React.cloneElement(element, { key: `list-item-${listItemIndex++}` })
-          );
-        } else {
-          elements.push(React.cloneElement(element, { key: index }));
-        }
-      }
-    });
-
-    closeLists(); // Close any remaining open lists
-    return elements;
+  const markdownToJSX = (markdown: string) => {
+    return (
+      <Markdown remarkPlugins={[remarkGfm]} components={styled_components}>
+        {markdown}
+      </Markdown>
+    );
   };
 
+  // Return the functions
   return {
     getMDXData,
     getMetadata,
     getRoutes,
     markdownToHTML,
     markdownToJSX,
+    getFilesInDir,
   };
 };
